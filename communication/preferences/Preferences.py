@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 
+
+# When running the file test_unitaire uncomment
 from communication.preferences.CriterionName import CriterionName
 from communication.preferences.CriterionValue import CriterionValue
 from communication.preferences.Item import Item
 from communication.preferences.Value import Value
+
+# When running the file Preferences uncomment
+# from Value import Value
+# from Item import Item
+# from CriterionValue import CriterionValue
+# from CriterionName import CriterionName
+
+import operator
 
 
 class Preferences:
@@ -66,17 +76,32 @@ class Preferences:
     def most_preferred(self, item_list):
         """Returns the most preferred item from a list.
         """
-        # To be completed
+        score_items = {}
+        for item in item_list:
+            score_items[item] = item.get_score(self)
+        best_item = max(score_items.items(), key=operator.itemgetter(1))[0]
         return best_item
 
-    def is_item_among_top_10_percent(self, item):
+    def is_item_among_top_10_percent(self, item, item_list):
         """
         Return whether a given item is among the top 10 percent of the preferred items.
 
         :return: a boolean, True means that the item is among the favourite ones
         """
-        # To be completed
-        return is_top_item
+        score_items = {}
+        for each_item in item_list:
+            score_items[each_item] = each_item.get_score(self)
+        score_items_order = {k: v for k, v in sorted(
+            score_items.items(), key=lambda item: item[1])}
+        item_list_ordered = list(score_items_order.keys())
+        number_value_to_get = len(item_list_ordered)//10
+        if number_value_to_get == 0:
+            best_item = self.most_preferred(item_list)
+            is_top_item = (best_item == item)
+        else:
+            item_list_cropped = item_list_ordered[:number_value_to_get]
+            is_top_item = (item in item_list_cropped)
+        return(is_top_item)
 
 
 if __name__ == '__main__':
@@ -115,9 +140,19 @@ if __name__ == '__main__':
     print(diesel_engine)
     print(electric_engine)
     print(diesel_engine.get_value(agent_pref, CriterionName.PRODUCTION_COST))
-    print(agent_pref.is_preferred_criterion(CriterionName.CONSUMPTION, CriterionName.NOISE))
-    print('Electric Engine > Diesel Engine : {}'.format(agent_pref.is_preferred_item(electric_engine, diesel_engine)))
-    print('Diesel Engine > Electric Engine : {}'.format(agent_pref.is_preferred_item(diesel_engine, electric_engine)))
-    print('Electric Engine (for agent 1) = {}'.format(electric_engine.get_score(agent_pref)))
-    print('Diesel Engine (for agent 1) = {}'.format(diesel_engine.get_score(agent_pref)))
-    print('Most preferred item is : {}'.format(agent_pref.most_preferred([diesel_engine, electric_engine]).get_name()))
+    print(agent_pref.is_preferred_criterion(
+        CriterionName.CONSUMPTION, CriterionName.NOISE))
+    print('Electric Engine > Diesel Engine : {}'.format(
+        agent_pref.is_preferred_item(electric_engine, diesel_engine)))
+    print('Diesel Engine > Electric Engine : {}'.format(
+        agent_pref.is_preferred_item(diesel_engine, electric_engine)))
+    print('Electric Engine (for agent 1) = {}'.format(
+        electric_engine.get_score(agent_pref)))
+    print('Diesel Engine (for agent 1) = {}'.format(
+        diesel_engine.get_score(agent_pref)))
+    print('Most preferred item is : {}'.format(
+        agent_pref.most_preferred([diesel_engine, electric_engine]).get_name()))
+
+    print(agent_pref.is_preferred_item(diesel_engine, electric_engine))
+    item_list_ = [diesel_engine, electric_engine]
+    print(type(agent_pref.most_preferred(item_list_).get_name()))
