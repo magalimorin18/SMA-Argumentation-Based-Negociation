@@ -19,6 +19,7 @@ class ArgumentAgent(CommunicatingAgent):
         self.preference = Preferences()
 
     def step(self):
+        #TODO: Add unit tests
         super().step()
         # print(f"{self.get_name()}'s turn")
         list_messages = self.get_new_messages()
@@ -29,7 +30,8 @@ class ArgumentAgent(CommunicatingAgent):
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
                 else:
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
-            # if message.get_performative() == MessagePerformative.ACCEPT and message.get_content() in self.model.items_list:
+            if message.get_performative() == MessagePerformative.ACCEPT and message.get_content() in self.model.items_list:
+                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
                 
 
     def get_preference(self):
@@ -73,6 +75,7 @@ class ArgumentModel(Model):
 
         self.running = True
 
+    # Attempt at handling negociation using model step
     # def argue(self):
     #     a_1_agent = self.schedule._agents[self._name_to_id["A_1"]]
     #     a_1_agent.send_message(
@@ -99,6 +102,6 @@ if __name__ == "__main__":
                 message_performative=MessagePerformative.PROPOSE,
                 content=model.random.choice(model.items_list)))
     
-    # Management of RandomActivation ?
-    for _ in range(10):
+    #TODO: Check for management of RandomActivation ?
+    for _ in range(2):
         model.step()
