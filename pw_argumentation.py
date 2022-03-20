@@ -25,7 +25,10 @@ class ArgumentAgent(CommunicatingAgent):
         for message in list_messages:
             print(message)
             if message.get_performative() == MessagePerformative.PROPOSE and message.get_content() in self.model.items_list:
-                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
+                if self.preference.is_item_among_top_10_percent(message.get_content(), self.model.items_list):
+                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
+                else:
+                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
             # if message.get_performative() == MessagePerformative.ACCEPT and message.get_content() in self.model.items_list:
                 
 
