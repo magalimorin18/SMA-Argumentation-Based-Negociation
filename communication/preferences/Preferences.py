@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
-
+import os, sys
+sys.path.append(os.getcwd())
 
 # When running the file test_unitaire uncomment
 from communication.preferences.CriterionName import CriterionName
 from communication.preferences.CriterionValue import CriterionValue
 from communication.preferences.Item import Item
 from communication.preferences.Value import Value
-
-# When running the file Preferences uncomment
-# from Value import Value
-# from Item import Item
-# from CriterionValue import CriterionValue
-# from CriterionName import CriterionName
 
 import operator
 
