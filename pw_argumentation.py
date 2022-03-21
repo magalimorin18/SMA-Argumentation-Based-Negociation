@@ -14,9 +14,10 @@ from communication.message.MessagePerformative import MessagePerformative
 class ArgumentAgent(CommunicatingAgent):
     """ArgumentAgent which inherits from CommunicatingAgent"""
 
-    def __init__(self, unique_id, model, name):
+    def __init__(self, unique_id, model, name, item_set):
         super().__init__(unique_id=unique_id, model=model, name=name)
         self.preference = Preferences()
+        self._item_set = item_set.copy()
 
     def step(self):
         #TODO: Add unit tests
@@ -25,13 +26,20 @@ class ArgumentAgent(CommunicatingAgent):
         list_messages = self.get_new_messages()
         for message in list_messages:
             print(message)
-            if message.get_performative() == MessagePerformative.PROPOSE and message.get_content() in self.model.items_list:
-                if self.preference.is_item_among_top_10_percent(message.get_content(), self.model.items_list):
+            # print(f"Agent {self.get_name()} has right performative: {message.get_performative() in [MessagePerformative.ACCEPT, MessagePerformative.COMMIT]}")
+            # print(f"Agent {self.get_name()} has item in set: {message.get_content() in self._item_set}")
+            # print(f"Agent {self.get_name()} has item set: {self._item_set}")
+            if (message.get_performative() == MessagePerformative.PROPOSE) and (message.get_content() in self._item_set):
+                if self.preference.is_item_among_top_10_percent(message.get_content(), self._item_set):
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
                 else:
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
-            if message.get_performative() == MessagePerformative.ACCEPT and message.get_content() in self.model.items_list:
+            if (message.get_performative() in [MessagePerformative.ACCEPT, MessagePerformative.COMMIT]) and (message.get_content() in self._item_set):
+                # print(f"Got through that condition for {self.get_name()}")
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
+                self._item_set.remove(message.get_content())
+            
+            
                 
 
     def get_preference(self):
@@ -48,7 +56,7 @@ class ArgumentAgent(CommunicatingAgent):
         self.preference.set_criterion_name_list(criterion_list)
 
         # Random generation of preferences for all criteria
-        for item in self.model.items_list:
+        for item in self._item_set:
             for criterion in self.preference.get_criterion_name_list():
                 item_criterion_pref = CriterionValue(item, criterion, self.random.choice(list(Value)))
                 self.preference.add_criterion_value(item_criterion_pref)
@@ -56,19 +64,19 @@ class ArgumentAgent(CommunicatingAgent):
 class ArgumentModel(Model):
     """ArgumentModel which inherits from Model"""
 
-    def __init__(self, items_list, list_agent_names):
+    def __init__(self, item_set, list_agent_names):
         super().__init__(self)
         self.schedule = RandomActivation(self)
         self.__message_service = MessageService(self.schedule)
-        self.items_list = items_list
-        self.__list_agent_names = list_agent_names
+        self._item_set = item_set.copy()
+        self.__list_agent_names = list_agent_names.copy()
         self._name_to_id = {}
 
         # To be completed
 
         for agent_name in self.__list_agent_names:
             new_id = self.next_id()
-            a = ArgumentAgent(new_id, self, agent_name)
+            a = ArgumentAgent(new_id, self, agent_name, self._item_set)
             a.generate_preferences()
             self.schedule.add(a)
             self._name_to_id[agent_name] = new_id
@@ -93,15 +101,15 @@ if __name__ == "__main__":
     # To be completed
     items_list = [Item("ICED", "Diesel"), Item("E", "Electric")]
     agents_name = ["A_1", "A_2"]
-    model = ArgumentModel(items_list=items_list, list_agent_names=agents_name)
+    model = ArgumentModel(item_set=items_list, list_agent_names=agents_name)
     
     a_1_agent = model.schedule._agents[model._name_to_id["A_1"]]
     a_1_agent.send_message(
         Message(from_agent=a_1_agent.get_name(),
                 to_agent="A_2",
                 message_performative=MessagePerformative.PROPOSE,
-                content=model.random.choice(model.items_list)))
+                content=model.random.choice(model._item_set)))
     
     #TODO: Check for management of RandomActivation ?
-    for _ in range(2):
+    for _ in range(10):
         model.step()
