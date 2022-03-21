@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-import os, sys
+import operator
+from communication.preferences.Value import Value
+from communication.preferences.Item import Item
+from communication.preferences.CriterionValue import CriterionValue
+from communication.preferences.CriterionName import CriterionName
+import os
+import sys
 sys.path.append(os.getcwd())
 
 # When running the file test_unitaire uncomment
-from communication.preferences.CriterionName import CriterionName
-from communication.preferences.CriterionValue import CriterionValue
-from communication.preferences.Item import Item
-from communication.preferences.Value import Value
-
-import operator
 
 
 class Preferences:
@@ -71,11 +71,12 @@ class Preferences:
     def most_preferred(self, item_list):
         """Returns the most preferred item from a list.
         """
-        score_items = {}
-        for item in item_list:
-            score_items[item] = item.get_score(self)
-        best_item = max(score_items.items(), key=operator.itemgetter(1))[0]
-        return best_item
+        if len(item_list) != 0:
+            score_items = {}
+            for item in item_list:
+                score_items[item] = item.get_score(self)
+            best_item = max(score_items.items(), key=operator.itemgetter(1))[0]
+            return best_item
 
     def is_item_among_top_10_percent(self, item, item_list):
         """
