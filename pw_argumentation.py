@@ -18,6 +18,7 @@ class ArgumentAgent(CommunicatingAgent):
         super().__init__(unique_id=unique_id, model=model, name=name)
         self.preference = Preferences()
         self._item_set = item_set.copy()
+        self.__committed = False
 
     def step(self):
         #TODO: Add unit tests
@@ -34,16 +35,25 @@ class ArgumentAgent(CommunicatingAgent):
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
                 else:
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
-            if (message.get_performative() in [MessagePerformative.ACCEPT, MessagePerformative.COMMIT]) and (message.get_content() in self._item_set):
+                    self.__committed = True
+            if (message.get_performative() == MessagePerformative.ACCEPT) and (message.get_content() in self._item_set):
                 # print(f"Got through that condition for {self.get_name()}")
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
                 self._item_set.remove(message.get_content())
-            
-            
-                
+            if (message.get_performative() == MessagePerformative.COMMIT):
+                self.__committed = True
+                if message.get_content() in self._item_set:
+                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
+                    self._item_set.remove(message.get_content())
+                    
+            if (message.get_performative() == MessagePerformative.ASK_WHY) and (message.get_content() in self._item_set):
+                self.__committed = True
 
     def get_preference(self):
         return self.preference
+    
+    def has_committed(self):
+        return self.__committed
 
     def generate_preferences(self):
         # see question 3
@@ -92,10 +102,19 @@ class ArgumentModel(Model):
     #                 message_performative=MessagePerformative.PROPOSE,
     #                 content=self.random.choice(self.items_list)))
 
+    def check_close_argumentation(self):
+        """If all agents have committed, the model ends"""
+        for agent in self.schedule.agents:
+            if not agent.has_committed():
+                return
+        self.running = False
+        
     def step(self):
         # self.argue()
         self.__message_service.dispatch_messages()
         self.schedule.step()
+        self.check_close_argumentation()
+            
 
 if __name__ == "__main__":
     # To be completed
@@ -109,7 +128,5 @@ if __name__ == "__main__":
                 to_agent="A_2",
                 message_performative=MessagePerformative.PROPOSE,
                 content=model.random.choice(model._item_set)))
-    
-    #TODO: Check for management of RandomActivation ?
-    for _ in range(10):
-        model.step()
+
+    model.run_model()
