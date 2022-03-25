@@ -35,11 +35,12 @@ class ArgumentAgent(CommunicatingAgent):
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
                 else:
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
-                    self.__committed = True
+
             if (message.get_performative() == MessagePerformative.ACCEPT) and (message.get_content() in self._item_set):
                 # print(f"Got through that condition for {self.get_name()}")
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
                 self._item_set.remove(message.get_content())
+
             if (message.get_performative() == MessagePerformative.COMMIT):
                 self.__committed = True
                 if message.get_content() in self._item_set:
@@ -47,6 +48,10 @@ class ArgumentAgent(CommunicatingAgent):
                     self._item_set.remove(message.get_content())
                     
             if (message.get_performative() == MessagePerformative.ASK_WHY) and (message.get_content() in self._item_set):
+                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=None))
+                self.__committed = True
+            
+            if message.get_performative() == MessagePerformative.ARGUE:
                 self.__committed = True
 
     def get_preference(self):
