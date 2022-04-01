@@ -10,10 +10,8 @@ from communication.preferences.Value import Value
 
 
 from communication.arguments.CoupleValue import CoupleValue
-from communication.arguments.Comparison import Comparison
-from pip import main
-import sys
-sys.append('..')
+
+from communication.preferences.Value import Value
 
 
 class Argument:
@@ -50,27 +48,22 @@ class Argument:
         """
         self.__couple_values_list.append(CoupleValue(criterion_name, value))
 
-    def support_proposal(self, item):
-        """Checks if the argument supports the proposal.
-        Used when the agent receives " ASK_WHY " after having proposed an item
-        : param item : str - name of the item which was proposed
-        : return : string - the strongest supportive argument
+    def list_supporting_proposal(self, item, preference):
+        """Returns the list of supporting proposal.
         """
-
-
-if __name__ == "__main__":
-    electric_engine = Item("Electric Engine", "A very quiet engine")
-    agent_pref = Preferences()
-    agent_pref.add_criterion_value(CriterionValue(electric_engine, CriterionName.PRODUCTION_COST,
-                                                  Value.BAD))
-    agent_pref.add_criterion_value(CriterionValue(electric_engine, CriterionName.CONSUMPTION,
-                                                  Value.VERY_BAD))
-    agent_pref.add_criterion_value(CriterionValue(electric_engine, CriterionName.DURABILITY,
-                                                  Value.GOOD))
-    agent_pref.add_criterion_value(CriterionValue(electric_engine, CriterionName.ENVIRONMENT_IMPACT,
-                                                  Value.VERY_GOOD))
-    agent_pref.add_criterion_value(CriterionValue(electric_engine, CriterionName.NOISE,
-                                                  Value.VERY_GOOD))
-
-    argument = Argument(True, electric_engine)
-    argument.add_premiss_comparison()
+        criterion_list = preference.get_criterion_name_list()
+        for i, criterion_name in enumerate(criterion_list):
+            if preference.get_value(item, criterion_name) in [Value.GOOD, Value.VERY_GOOD]:
+                self.add_premiss_couple_values(criterion_name, preference.get_value(item, criterion_name))
+                for worse_criterion_name in criterion_list[i+1:]:
+                    self.add_premiss_comparison(criterion_name, worse_criterion_name)
+    
+    def list_attacking_proposal(self, item, preference):
+        """Returns the list of attacking proposal.
+        """
+        criterion_list = preference.get_criterion_name_list()
+        for i, criterion_name in enumerate(criterion_list):
+            if preference.get_value(item, criterion_name) in [Value.BAD, Value.VERY_BAD]:
+                self.add_premiss_couple_values(criterion_name, preference.get_value(item, criterion_name))
+                for worse_criterion_name in criterion_list[i+1:]:
+                    self.add_premiss_comparison(criterion_name, worse_criterion_name)
