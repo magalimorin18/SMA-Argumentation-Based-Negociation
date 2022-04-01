@@ -10,6 +10,7 @@ from communication.preferences.Value import Value
 
 
 from communication.arguments.CoupleValue import CoupleValue
+from communication.arguments.Comparison import Comparison
 
 from communication.preferences.Value import Value
 
@@ -55,8 +56,9 @@ class Argument:
         for i, criterion_name in enumerate(criterion_list):
             if preference.get_value(item, criterion_name) in [Value.GOOD, Value.VERY_GOOD]:
                 self.add_premiss_couple_values(criterion_name, preference.get_value(item, criterion_name))
-                for worse_criterion_name in criterion_list[i+1:]:
-                    self.add_premiss_comparison(criterion_name, worse_criterion_name)
+                for worse_criterion_name in criterion_list:
+                    if preference.is_preferred_criterion(criterion_name, worse_criterion_name):
+                        self.add_premiss_comparison(criterion_name, worse_criterion_name)
     
     def list_attacking_proposal(self, item, preference):
         """Returns the list of attacking proposal.
@@ -65,5 +67,6 @@ class Argument:
         for i, criterion_name in enumerate(criterion_list):
             if preference.get_value(item, criterion_name) in [Value.BAD, Value.VERY_BAD]:
                 self.add_premiss_couple_values(criterion_name, preference.get_value(item, criterion_name))
-                for worse_criterion_name in criterion_list[i+1:]:
-                    self.add_premiss_comparison(criterion_name, worse_criterion_name)
+                for worse_criterion_name in criterion_list:
+                    if preference.is_preferred_criterion(criterion_name, worse_criterion_name):
+                        self.add_premiss_comparison(criterion_name, worse_criterion_name)
