@@ -10,6 +10,7 @@ from communication.preferences.Value import Value
 
 
 from communication.arguments.CoupleValue import CoupleValue
+from communication.arguments.Comparison import Comparison
 
 from communication.preferences.Value import Value
 
