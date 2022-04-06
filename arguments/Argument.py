@@ -28,7 +28,7 @@ class Argument:
         self.__couple_values_list = []
 
     def __str__(self) -> str:
-        return f'{" " if self.__decision else "\u00ac"} {self.__item} "\u2190" {self.__comparison_list.join(" ")} {self.__couple_values_list.join(" ")}'
+        return f'{" " if self.__decision else f"{chr(92)}u00ac"} {self.__item} "\u2190" {self.__comparison_list.join(" ")} {self.__couple_values_list.join(" ")}'
 
     def add_premiss_comparison(self, criterion_name_1, criterion_name_2):
         """Adds a premiss comparison in the comparison list.
