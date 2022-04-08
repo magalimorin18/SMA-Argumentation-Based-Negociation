@@ -51,7 +51,7 @@ class ArgumentAgent(CommunicatingAgent):
 
             if (message.get_performative() == MessagePerformative.ASK_WHY) and (message.get_content() in self.model._item_set):
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
-                ), message_performative=MessagePerformative.ARGUE, content=None))
+                ), message_performative=MessagePerformative.ARGUE, content=self.support_proposal(message.get_content())))
                 self.__committed = True
 
             if message.get_performative() == MessagePerformative.ARGUE:
@@ -115,12 +115,14 @@ class ArgumentAgent(CommunicatingAgent):
     def support_proposal(self, item):
         """
         Used when the agent receives " ASK_WHY " after having proposed an item
-        : param item : str - name of the item which was proposed
+        : param item_name : str - name of the item which was proposed
         : return : string - the strongest supportive argument
         """
+        # item = self.model.find_item_from_name(item_name)
         argument = Argument(True, item)
-        return(argument.list_supporting_proposal(self, item, self.preference)[0])
-
+        argument.list_supporting_proposal(self.preference)
+        argument.best_premiss()
+        return argument
 
 class ArgumentModel(Model):
     """ArgumentModel which inherits from Model"""
@@ -132,7 +134,8 @@ class ArgumentModel(Model):
         self._item_set = item_set.copy()
         self.__list_agent_names = list_agent_names.copy()
         self._name_to_id = {}
-
+        
+        
         # To be completed
 
         for agent_name in self.__list_agent_names:
@@ -159,6 +162,11 @@ class ArgumentModel(Model):
             if not agent.has_committed():
                 return
         self.running = False
+    
+    def find_item_from_name(self, item_name):
+        for item in self._item_set:
+            if item.get_name() == item_name:
+                return item
 
     def step(self):
         # self.argue()
