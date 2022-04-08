@@ -56,21 +56,54 @@ class ArgumentAgent(CommunicatingAgent):
     def has_committed(self):
         return self.__committed
 
-    def generate_preferences(self):
+    def generate_preferences(self, random_prefs=False):
         # see question 3
         # To be completed
         # TODO: Add a csv filename argument to generate preferences (need to discuss about the formatting)
 
-        # Random criterion priorities
-        criterion_list = list(CriterionName)
-        self.random.shuffle(criterion_list)
-        self.preference.set_criterion_name_list(criterion_list)
+        if random_prefs:
+            # Random criterion priorities
+            criterion_list = list(CriterionName)
+            self.random.shuffle(criterion_list)
+            self.preference.set_criterion_name_list(criterion_list)
 
-        # Random generation of preferences for all criteria
-        for item in self.model._item_set:
-            for criterion in self.preference.get_criterion_name_list():
-                item_criterion_pref = CriterionValue(item, criterion, self.random.choice(list(Value)))
-                self.preference.add_criterion_value(item_criterion_pref)
+            # Random generation of preferences for all criteria
+            for item in self.model._item_set:
+                for criterion in self.preference.get_criterion_name_list():
+                    item_criterion_pref = CriterionValue(item, criterion, self.random.choice(list(Value)))
+                    self.preference.add_criterion_value(item_criterion_pref)
+        else:
+            if self.get_name() == "A_1":
+                self.preference.set_criterion_name_list([CriterionName.PRODUCTION_COST, CriterionName.ENVIRONMENT_IMPACT, CriterionName.CONSUMPTION, CriterionName.DURABILITY, CriterionName.NOISE])
+                for item in self.model._item_set:
+                    if item.get_name() == "ICED":
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.PRODUCTION_COST, Value.VERY_GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.CONSUMPTION, Value.GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.DURABILITY, Value.VERY_GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.ENVIRONMENT_IMPACT, Value.VERY_BAD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.NOISE, Value.BAD))
+                    elif item.get_name() == "E":
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.PRODUCTION_COST, Value.BAD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.CONSUMPTION, Value.VERY_BAD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.DURABILITY, Value.GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.ENVIRONMENT_IMPACT, Value.VERY_GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.NOISE, Value.VERY_GOOD))
+            elif self.get_name() == "A_2":
+                for item in self.model._item_set:
+                    if item.get_name() == "ICED":
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.PRODUCTION_COST, Value.GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.CONSUMPTION, Value.BAD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.DURABILITY, Value.VERY_GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.ENVIRONMENT_IMPACT, Value.VERY_BAD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.NOISE, Value.VERY_BAD))
+                    elif item.get_name() == "E":
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.PRODUCTION_COST, Value.GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.CONSUMPTION, Value.BAD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.DURABILITY, Value.BAD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.ENVIRONMENT_IMPACT, Value.VERY_GOOD))
+                        self.preference.add_criterion_value(CriterionValue(item, CriterionName.NOISE, Value.VERY_GOOD))
+            else:
+                self.generate_preferences(self, random_prefs=True)
 
 class ArgumentModel(Model):
     """ArgumentModel which inherits from Model"""
