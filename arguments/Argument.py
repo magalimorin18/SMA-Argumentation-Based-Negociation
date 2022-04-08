@@ -93,11 +93,21 @@ class Argument:
         # return attacking_proposal
                 self.add_premiss_couple_values(
                     criterion_name, preference.get_value(self.__item, criterion_name))
-                # for worse_criterion_name in criterion_list:
-                #     if preference.is_preferred_criterion(criterion_name, worse_criterion_name):
-                #         self.add_premiss_comparison(
-                #             criterion_name, worse_criterion_name)
+                for better_criterion in criterion_list:
+                    if preference.is_preferred_criterion(better_criterion, criterion_name):
+                        self.add_premiss_comparison(
+                            better_criterion, criterion_name)
 
-    def best_premiss(self):
-        if len(self.__couple_values_list) > 0:
+    def add_premiss(self, premiss=None):
+        if isinstance(premiss, CoupleValue) and premiss in self.__couple_values_list:
+            self.__premisses.append(premiss)
+        elif isinstance(premiss, Comparison) and premiss in self.__comparison_list:
+            self.__premisses.append(premiss)
+        else:
             self.__premisses.append(self.__couple_values_list[0])
+            
+        # if is_couple_value_type and len(self.__couple_values_list) > 0:
+        #     self.__premisses.append(self.__couple_values_list[premiss_idx])
+        # elif not is_couple_value_type and len(self.__comparison_list) > 0:
+        #     self.__premisses.append(self.__comparison_list[premiss_idx])
+        

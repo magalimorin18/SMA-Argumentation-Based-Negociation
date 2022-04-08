@@ -33,7 +33,7 @@ class ArgumentAgent(CommunicatingAgent):
             # print(f"Agent {self.get_name()} has right performative: {message.get_performative() in [MessagePerformative.ACCEPT, MessagePerformative.COMMIT]}")
             # print(f"Agent {self.get_name()} has item in set: {message.get_content() in self._item_set}")
             # print(f"Agent {self.get_name()} has item set: {self._item_set}")
-            if (message.get_performative() == MessagePerformative.PROPOSE) and (message.get_content() in self.model._item_set):
+            if (message.get_performative() == MessagePerformative.PROPOSE):
                 if self.preference.is_item_among_top_10_percent(message.get_content(), self.model._item_set):
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
                     ), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
@@ -41,23 +41,29 @@ class ArgumentAgent(CommunicatingAgent):
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
                     ), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
 
-            if (message.get_performative() == MessagePerformative.ACCEPT) and (message.get_content() in self.model._item_set):
+            if (message.get_performative() == MessagePerformative.ACCEPT):
                 # print(f"Got through that condition for {self.get_name()}")
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
                 ), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
+                self.__committed = True
 
-            if (message.get_performative() == MessagePerformative.COMMIT) and (message.get_content() in self.model._item_set):
+            if (message.get_performative() == MessagePerformative.COMMIT) and (not self.has_committed()):
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
                 ), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
                 self.__committed = True
 
-            if (message.get_performative() == MessagePerformative.ASK_WHY) and (message.get_content() in self.model._item_set):
+            if (message.get_performative() == MessagePerformative.ASK_WHY):
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
                 ), message_performative=MessagePerformative.ARGUE, content=self.support_proposal(message.get_content())))
-                self.__committed = True
 
             if message.get_performative() == MessagePerformative.ARGUE:
-                self.__committed = True
+                argument = message.get_content()
+                # TODO: Send message
+                attack_argument = self.attack_proposal(argument)
+                if attack_argument:
+                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=attack_argument))
+                else:
+                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=argument.get_conclusion()[1]))
 
     def get_preference(self):
         return self.preference
@@ -123,7 +129,8 @@ class ArgumentAgent(CommunicatingAgent):
         # item = self.model.find_item_from_name(item_name)
         argument = Argument(True, item)
         argument.list_supporting_proposal(self.preference)
-        argument.best_premiss()
+        
+        argument.add_premiss()
         return argument
     
     def argument_parsing(self, argument):
@@ -138,30 +145,45 @@ class ArgumentAgent(CommunicatingAgent):
         """
         return argument.get_premisses(), argument.get_conclusion()         
 
-    def is_attackable(self, argument):
+    def attack_proposal(self, argument):
         premisses, (decision, proposed_item) = self.argument_parsing(argument)
         criterion_preference_order = self.preference.get_criterion_name_list()
+        attacking_argument = Argument(False, proposed_item)
+        attacking_argument.list_attacking_proposal(self.preference)
         for premiss in premisses:
             if isinstance(premiss, CoupleValue):
 
                 # Prefered criterion
                 for criterion in criterion_preference_order:
                     if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()):
-                        return True
-
-                # Other item with better value on the same criterion
-                for item in self.model._item_set:
-                    if self.preference.get_value(item, premiss.get_criterion_name()).value > premiss.get_value().value:
-                        return True
+                        comp = Comparison(criterion, premiss.get_criterion_name())
+                        attacking_argument.add_premiss(comp)
+                        return attacking_argument
                 
                 # Lower value for the same criterion
                 if self.preference.get_value(proposed_item, premiss.get_criterion_name()).value < premiss.get_value().value:
-                    return True
+                    premiss = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(proposed_item, premiss.get_criterion_name()))
+                    attacking_argument.add_premiss(premiss)
+                    return attacking_argument
                 
                 # Prefered criterion has low value
                 for criterion in criterion_preference_order:
                     if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()) and self.preference.get_value(proposed_item, premiss.get_criterion_name()) in [Value.BAD, Value.VERY_BAD]:
-                        return True
+                        better_crit = Comparison(criterion, premiss.get_criterion_name())
+                        bad_value = CoupleValue(criterion, self.preference.get_value(proposed_item, premiss.get_criterion_name()))
+                        attacking_argument.add_premiss(better_crit)
+                        attacking_argument.add_premiss(bad_value)
+                        return attacking_argument
+                
+                # Other item with better value on the same criterion
+                for item in self.model._item_set:
+                    if self.preference.get_value(item, premiss.get_criterion_name()).value > premiss.get_value().value:
+                        other_prop = Argument(True, item)
+                        other_prop.list_supporting_proposal(self.preference)
+                        better_value = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(item, premiss.get_criterion_name()))
+                        other_prop.add_premiss(better_value)
+                        return other_prop
+
         return False
 
 class ArgumentModel(Model):
@@ -211,8 +233,9 @@ class ArgumentModel(Model):
     def step(self):
         # self.argue()
         self.__message_service.dispatch_messages()
-        self.schedule.step()
         self.check_close_argumentation()
+        self.schedule.step()
+        
 
 
 if __name__ == "__main__":
