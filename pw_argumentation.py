@@ -138,6 +138,32 @@ class ArgumentAgent(CommunicatingAgent):
         """
         return argument.get_premisses(), argument.get_conclusion()         
 
+    def is_attackable(self, argument):
+        premisses, (decision, proposed_item) = self.argument_parsing(argument)
+        criterion_preference_order = self.preference.get_criterion_name_list()
+        for premiss in premisses:
+            if isinstance(premiss, CoupleValue):
+
+                # Prefered criterion
+                for criterion in criterion_preference_order:
+                    if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()):
+                        return True
+
+                # Other item with better value on the same criterion
+                for item in self.model._item_set:
+                    if self.preference.get_value(item, premiss.get_criterion_name()).value > premiss.get_value().value:
+                        return True
+                
+                # Lower value for the same criterion
+                if self.preference.get_value(proposed_item, premiss.get_criterion_name()).value < premiss.get_value().value:
+                    return True
+                
+                # Prefered criterion has low value
+                for criterion in criterion_preference_order:
+                    if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()) and self.preference.get_value(proposed_item, premiss.get_criterion_name()) in [Value.BAD, Value.VERY_BAD]:
+                        return True
+        return False
+
 class ArgumentModel(Model):
     """ArgumentModel which inherits from Model"""
 
