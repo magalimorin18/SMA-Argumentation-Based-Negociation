@@ -11,6 +11,8 @@ from communication.preferences.Value import Value
 from communication.message.Message import Message
 from communication.message.MessagePerformative import MessagePerformative
 from arguments.Argument import Argument
+from arguments.Comparison import Comparison
+from arguments.CoupleValue import CoupleValue
 
 
 class ArgumentAgent(CommunicatingAgent):
@@ -123,6 +125,18 @@ class ArgumentAgent(CommunicatingAgent):
         argument.list_supporting_proposal(self.preference)
         argument.best_premiss()
         return argument
+    
+    def argument_parsing(self, argument):
+        """returns the premisses and the decision from recieved message
+
+        Args:
+            argument (Argument): the received argument
+
+        Returns:
+            premisses: list of premisses
+            conclusion: the decision (boolean, item)
+        """
+        return argument.get_premisses(), argument.get_conclusion()         
 
 class ArgumentModel(Model):
     """ArgumentModel which inherits from Model"""
