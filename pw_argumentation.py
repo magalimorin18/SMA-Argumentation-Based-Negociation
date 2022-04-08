@@ -10,6 +10,8 @@ from communication.preferences.CriterionName import CriterionName
 from communication.preferences.Value import Value
 from communication.message.Message import Message
 from communication.message.MessagePerformative import MessagePerformative
+from arguments.Argument import Argument
+
 
 class ArgumentAgent(CommunicatingAgent):
     """ArgumentAgent which inherits from CommunicatingAgent"""
@@ -20,7 +22,7 @@ class ArgumentAgent(CommunicatingAgent):
         self.__committed = False
 
     def step(self):
-        #TODO: Add unit tests
+        # TODO: Add unit tests
         super().step()
         # print(f"{self.get_name()}'s turn")
         list_messages = self.get_new_messages()
@@ -31,28 +33,33 @@ class ArgumentAgent(CommunicatingAgent):
             # print(f"Agent {self.get_name()} has item set: {self._item_set}")
             if (message.get_performative() == MessagePerformative.PROPOSE) and (message.get_content() in self.model._item_set):
                 if self.preference.is_item_among_top_10_percent(message.get_content(), self.model._item_set):
-                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
+                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
+                    ), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
                 else:
-                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
+                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
+                    ), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
 
             if (message.get_performative() == MessagePerformative.ACCEPT) and (message.get_content() in self.model._item_set):
                 # print(f"Got through that condition for {self.get_name()}")
-                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
+                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
+                ), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
 
             if (message.get_performative() == MessagePerformative.COMMIT) and (message.get_content() in self.model._item_set):
-                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
+                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
+                ), message_performative=MessagePerformative.COMMIT, content=message.get_content()))
                 self.__committed = True
-                    
+
             if (message.get_performative() == MessagePerformative.ASK_WHY) and (message.get_content() in self.model._item_set):
-                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=None))
+                self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
+                ), message_performative=MessagePerformative.ARGUE, content=self.support_proposal(message.get_content())))
                 self.__committed = True
-            
+
             if message.get_performative() == MessagePerformative.ARGUE:
                 self.__committed = True
 
     def get_preference(self):
         return self.preference
-    
+
     def has_committed(self):
         return self.__committed
 
@@ -105,6 +112,18 @@ class ArgumentAgent(CommunicatingAgent):
             else:
                 self.generate_preferences(self, random_prefs=True)
 
+    def support_proposal(self, item):
+        """
+        Used when the agent receives " ASK_WHY " after having proposed an item
+        : param item_name : str - name of the item which was proposed
+        : return : string - the strongest supportive argument
+        """
+        # item = self.model.find_item_from_name(item_name)
+        argument = Argument(True, item)
+        argument.list_supporting_proposal(self.preference)
+        argument.best_premiss()
+        return argument
+
 class ArgumentModel(Model):
     """ArgumentModel which inherits from Model"""
 
@@ -115,7 +134,8 @@ class ArgumentModel(Model):
         self._item_set = item_set.copy()
         self.__list_agent_names = list_agent_names.copy()
         self._name_to_id = {}
-
+        
+        
         # To be completed
 
         for agent_name in self.__list_agent_names:
@@ -142,20 +162,25 @@ class ArgumentModel(Model):
             if not agent.has_committed():
                 return
         self.running = False
-        
+    
+    def find_item_from_name(self, item_name):
+        for item in self._item_set:
+            if item.get_name() == item_name:
+                return item
+
     def step(self):
         # self.argue()
         self.__message_service.dispatch_messages()
         self.schedule.step()
         self.check_close_argumentation()
-            
+
 
 if __name__ == "__main__":
     # To be completed
     items_list = [Item("ICED", "Diesel"), Item("E", "Electric")]
     agents_name = ["A_1", "A_2"]
     model = ArgumentModel(item_set=items_list, list_agent_names=agents_name)
-    
+
     a_1_agent = model.schedule._agents[model._name_to_id["A_1"]]
     a_1_agent.send_message(
         Message(from_agent=a_1_agent.get_name(),

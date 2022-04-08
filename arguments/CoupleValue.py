@@ -27,4 +27,4 @@ class CoupleValue:
         return self.__value
 
     def __str__(self):
-        return f'{self.__criterion_name} = {self.__value}'
+        return f'{self.__criterion_name.name} = {self.__value.name}'
