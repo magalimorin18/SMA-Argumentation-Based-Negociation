@@ -17,4 +17,4 @@ class Comparison:
         self.__worst_criterion_name = worst_criterion_name
 
     def __str__(self):
-        return f'{self.__best_criterion_name.name} {chr(92)}u227b {self.__worst_criterion_name.name}'
+        return f'{self.__best_criterion_name.name} \u227b {self.__worst_criterion_name.name}'
