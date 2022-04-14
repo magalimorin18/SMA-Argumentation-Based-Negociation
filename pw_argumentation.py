@@ -104,6 +104,7 @@ class ArgumentAgent(CommunicatingAgent):
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.ENVIRONMENT_IMPACT, Value.VERY_GOOD))
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.NOISE, Value.VERY_GOOD))
             elif self.get_name() == "A_2":
+                self.preference.set_criterion_name_list([CriterionName.PRODUCTION_COST, CriterionName.ENVIRONMENT_IMPACT, CriterionName.CONSUMPTION, CriterionName.DURABILITY, CriterionName.NOISE])
                 for item in self.model._item_set:
                     if item.get_name() == "ICED":
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.PRODUCTION_COST, Value.GOOD))
