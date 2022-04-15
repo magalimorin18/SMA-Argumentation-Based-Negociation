@@ -34,9 +34,9 @@ We stored all the arguments in a dictionnary in understand the argumentation. Th
 
 # Our environment setup
 
-We have set up the environment and the agent according to the guidelines of the project. Basically, we have 2 agents $A_1$ and $A_2$ and 2 cars E (Electric) and ICED (Diesel).
+We have set up the environment and the agent according to the guidelines of the project. Basically, we have 2 agents A_1 and A_2 and 2 cars E (Electric) and ICED (Diesel).
 
-Their preferences are detailed in the guidelines and incites the agent $A_1$ to propose the ICED whereas the agent $A_2$ is more into the Electric car.
+Their preferences are detailed in the guidelines and incites the agent A_1 to propose the ICED whereas the agent A_2 is more into the Electric car.
 
 # Progress of the project
 - Before we implemented the dictionary that kept a history of the arguments used, our two agents debated endlessly, always putting forward the same argument.
