@@ -64,7 +64,7 @@ class Argument:
             : return : list of all premisses PRO an item ( sorted by order of importance
                 based on agent's preferences )
         """
-        criterion_list = preference.get_criterion_name_list()
+        criterion_list = reversed(preference.get_criterion_name_list())
         # supporting_proposal = []
         for criterion_name in criterion_list:
             pref_value = preference.get_value(self.__item, criterion_name)
@@ -84,7 +84,7 @@ class Argument:
             : return : list of all premisses CON an item ( sorted by order of importance
             based on preferences )
         """
-        criterion_list = preference.get_criterion_name_list()
+        criterion_list = reversed(preference.get_criterion_name_list())
         # attacking_proposal = []
         for criterion_name in criterion_list:
             pref_value = preference.get_value(self.__item, criterion_name)
@@ -148,8 +148,7 @@ class Argument:
                 if preference.get_value(item, premiss.get_criterion_name()).value > premiss.get_value().value:
                     other_prop = Argument(True, item)
                     other_prop.list_supporting_proposal(preference)
-                    better_value = CoupleValue(premiss.get_criterion_name(
-                    ), preference.get_value(item, premiss.get_criterion_name()))
+                    better_value = CoupleValue(premiss.get_criterion_name(), preference.get_value(item, premiss.get_criterion_name()))
                     other_prop.__add_premiss(better_value)
                     return other_prop
 
