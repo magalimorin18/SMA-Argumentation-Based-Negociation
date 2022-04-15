@@ -41,3 +41,4 @@ Their preferences are detailed in the guidelines and incites the agent $A_1$ to 
 # Progress of the project
 - Avant que nous implémentions le dictionnaire qui gardait un historique des arguments utilisés, nos deux agents débattaient infiniment en avançant toujours le même argument.
 ![Capture d’écran (289)](https://user-images.githubusercontent.com/51906903/163631161-32a3dc05-cd58-4eb4-9829-6cb71f92af33.png)
+![Capture d’écran (307)](https://user-images.githubusercontent.com/51906903/163631359-e708a10f-9f0d-45e0-a6cc-11c358d47fa6.png)
