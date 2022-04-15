@@ -35,8 +35,14 @@ class ArgumentAgent(CommunicatingAgent):
             # print(f"Agent {self.get_name()} has item set: {self._item_set}")
             if (message.get_performative() == MessagePerformative.PROPOSE):
                 if self.preference.is_item_among_top_10_percent(message.get_content(), self.model._item_set):
-                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
-                    ), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
+                    if message.get_content() == self.preference.most_preferred(self.model._item_set):
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
+                        ), message_performative=MessagePerformative.ACCEPT, content=message.get_content()))
+                    else:
+                        self.send_message(Message(from_agent=a_1_agent.get_name(),
+                                to_agent="A_2",
+                                message_performative=MessagePerformative.PROPOSE,
+                                content=self.preference.most_preferred(self.model._item_set)))
                 else:
                     self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
                     ), message_performative=MessagePerformative.ASK_WHY, content=message.get_content()))
@@ -53,17 +59,51 @@ class ArgumentAgent(CommunicatingAgent):
                 self.__committed = True
 
             if (message.get_performative() == MessagePerformative.ASK_WHY):
+                new_argument = Argument(True, message.get_content())
+                _, arg_with_premiss = self.support_proposal(new_argument)
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
-                ), message_performative=MessagePerformative.ARGUE, content=self.support_proposal(message.get_content())))
+                ), message_performative=MessagePerformative.ARGUE, content=arg_with_premiss))
 
             if message.get_performative() == MessagePerformative.ARGUE:
-                argument = message.get_content()
-                # TODO: Send message
-                attack_argument = self.attack_proposal(argument)
-                if attack_argument:
-                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=attack_argument))
+                received_argument = message.get_content()
+
+                # If attacker
+                if received_argument.get_conclusion()[0]:
+                    attack_type, attack_argument = self.attack_proposal(received_argument)
+                    if attack_type == True:
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=attack_argument))
+                    elif isinstance(attack_type, Argument):
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=attack_type))
+                    else:
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=received_argument.get_conclusion()[1]))
+
+                # If supporter
                 else:
-                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=argument.get_conclusion()[1]))
+                    found, support_argument = self.support_proposal(received_argument)
+                    if found:
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=support_argument))
+                    else:
+                        other_item = self.select_other_item(self.argument_parsing(received_argument)[1][1])
+                        if other_item:
+                            self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.PROPOSE, content=other_item))
+                        else:
+                            print("WARNING: No other item to propose")
+                    
+    def select_other_item(self, item):
+        """selects an item from the item set which is not the item received
+
+        Args:
+            item (Item): the item received
+
+        Returns:
+            Item: the item selected
+        """
+        other_item_set = [i for i in self.model._item_set if i != item]
+        if len(other_item_set)>0:
+            other_item = self.model.random.choice(other_item_set)
+            return other_item
+        else:
+            return False
 
     def get_preference(self):
         return self.preference
@@ -104,6 +144,7 @@ class ArgumentAgent(CommunicatingAgent):
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.ENVIRONMENT_IMPACT, Value.VERY_GOOD))
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.NOISE, Value.VERY_GOOD))
             elif self.get_name() == "A_2":
+                self.preference.set_criterion_name_list([CriterionName.ENVIRONMENT_IMPACT, CriterionName.NOISE, CriterionName.PRODUCTION_COST, CriterionName.CONSUMPTION, CriterionName.DURABILITY])
                 for item in self.model._item_set:
                     if item.get_name() == "ICED":
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.PRODUCTION_COST, Value.GOOD))
@@ -120,18 +161,17 @@ class ArgumentAgent(CommunicatingAgent):
             else:
                 self.generate_preferences(self, random_prefs=True)
 
-    def support_proposal(self, item):
+    def support_proposal(self, received_argument = None):
         """
         Used when the agent receives " ASK_WHY " after having proposed an item
         : param item_name : str - name of the item which was proposed
         : return : string - the strongest supportive argument
         """
         # item = self.model.find_item_from_name(item_name)
-        argument = Argument(True, item)
-        argument.list_supporting_proposal(self.preference)
-        
-        argument.add_premiss()
-        return argument
+        premisses, (received_decision, proposed_item) = self.argument_parsing(received_argument)
+        supporting_argument = Argument(True, proposed_item)
+        supporting_premiss_found = supporting_argument.find_supporting_premisses(self.preference, proposed_item, premisses)
+        return supporting_premiss_found, supporting_argument
     
     def argument_parsing(self, argument):
         """returns the premisses and the decision from recieved message
@@ -143,48 +183,16 @@ class ArgumentAgent(CommunicatingAgent):
             premisses: list of premisses
             conclusion: the decision (boolean, item)
         """
-        return argument.get_premisses(), argument.get_conclusion()         
+        return argument.get_premisses(), argument.get_conclusion()
 
-    def attack_proposal(self, argument):
-        premisses, (decision, proposed_item) = self.argument_parsing(argument)
-        criterion_preference_order = self.preference.get_criterion_name_list()
+    def attack_proposal(self, received_argument):
+        premisses, (received_decision, proposed_item) = self.argument_parsing(received_argument)
+        assert received_decision == True
+        # criterion_preference_order = self.preference.get_criterion_name_list()
         attacking_argument = Argument(False, proposed_item)
-        attacking_argument.list_attacking_proposal(self.preference)
-        for premiss in premisses:
-            if isinstance(premiss, CoupleValue):
-
-                # Prefered criterion
-                for criterion in criterion_preference_order:
-                    if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()):
-                        comp = Comparison(criterion, premiss.get_criterion_name())
-                        attacking_argument.add_premiss(comp)
-                        return attacking_argument
-                
-                # Lower value for the same criterion
-                if self.preference.get_value(proposed_item, premiss.get_criterion_name()).value < premiss.get_value().value:
-                    premiss = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(proposed_item, premiss.get_criterion_name()))
-                    attacking_argument.add_premiss(premiss)
-                    return attacking_argument
-                
-                # Prefered criterion has low value
-                for criterion in criterion_preference_order:
-                    if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()) and self.preference.get_value(proposed_item, premiss.get_criterion_name()) in [Value.BAD, Value.VERY_BAD]:
-                        better_crit = Comparison(criterion, premiss.get_criterion_name())
-                        bad_value = CoupleValue(criterion, self.preference.get_value(proposed_item, premiss.get_criterion_name()))
-                        attacking_argument.add_premiss(better_crit)
-                        attacking_argument.add_premiss(bad_value)
-                        return attacking_argument
-                
-                # Other item with better value on the same criterion
-                for item in self.model._item_set:
-                    if self.preference.get_value(item, premiss.get_criterion_name()).value > premiss.get_value().value:
-                        other_prop = Argument(True, item)
-                        other_prop.list_supporting_proposal(self.preference)
-                        better_value = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(item, premiss.get_criterion_name()))
-                        other_prop.add_premiss(better_value)
-                        return other_prop
-
-        return False
+        
+        attacking_argument_type = attacking_argument.find_attacking_premisses(self.preference, proposed_item, premisses, self.model._item_set)
+        return attacking_argument_type, attacking_argument
 
 class ArgumentModel(Model):
     """ArgumentModel which inherits from Model"""
@@ -234,8 +242,7 @@ class ArgumentModel(Model):
         # self.argue()
         self.__message_service.dispatch_messages()
         self.check_close_argumentation()
-        self.schedule.step()
-        
+        self.schedule.step()       
 
 
 if __name__ == "__main__":
@@ -245,10 +252,17 @@ if __name__ == "__main__":
     model = ArgumentModel(item_set=items_list, list_agent_names=agents_name)
 
     a_1_agent = model.schedule._agents[model._name_to_id["A_1"]]
+    a_2_agent = model.schedule._agents[model._name_to_id["A_2"]]
+    
     a_1_agent.send_message(
         Message(from_agent=a_1_agent.get_name(),
                 to_agent="A_2",
                 message_performative=MessagePerformative.PROPOSE,
-                content=model.random.choice(model._item_set)))
+                content=items_list[0]))
+    a_2_agent.send_message(
+        Message(from_agent=a_2_agent.get_name(),
+                to_agent="A_1",
+                message_performative=MessagePerformative.PROPOSE,
+                content=items_list[1]))
 
     model.run_model()

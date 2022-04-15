@@ -18,3 +18,7 @@ class Comparison:
 
     def __str__(self):
         return f'{self.__best_criterion_name.name} \u227b {self.__worst_criterion_name.name}'
+    
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Comparison):
+            return self.__best_criterion_name == __o.__best_criterion_name and self.__worst_criterion_name == __o.__worst_criterion_name
