@@ -1,5 +1,6 @@
 from mesa import Model
 from mesa.time import RandomActivation
+import time
 
 from communication.agent.CommunicatingAgent import CommunicatingAgent
 from communication.message.MessageService import MessageService
@@ -53,17 +54,47 @@ class ArgumentAgent(CommunicatingAgent):
                 self.__committed = True
 
             if (message.get_performative() == MessagePerformative.ASK_WHY):
+                new_argument = Argument(True, message.get_content())
                 self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(
-                ), message_performative=MessagePerformative.ARGUE, content=self.support_proposal(message.get_content())))
+                ), message_performative=MessagePerformative.ARGUE, content=self.support_proposal(new_argument)))
 
             if message.get_performative() == MessagePerformative.ARGUE:
-                argument = message.get_content()
-                # TODO: Send message
-                attack_argument = self.attack_proposal(argument)
-                if attack_argument:
-                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=attack_argument))
+                received_argument = message.get_content()
+
+                # If attacker
+                if received_argument.get_conclusion()[0]:
+                    attack_argument = self.attack_proposal(received_argument)
+                    if attack_argument:
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=attack_argument))
+                    else:
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=received_argument.get_conclusion()[1]))
+                # If supporter
                 else:
-                    self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ACCEPT, content=argument.get_conclusion()[1]))
+                    support_argument = self.support_proposal(received_argument)
+                    if support_argument:
+                        self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.ARGUE, content=support_argument))
+                    else:
+                        other_item = self.select_other_item(self.argument_parsing(received_argument)[1][1])
+                        if other_item:
+                            self.send_message(Message(from_agent=self.get_name(), to_agent=message.get_exp(), message_performative=MessagePerformative.PROPOSE, content=other_item))
+                        else:
+                            print("WARNING: No other item to propose")
+                    
+    def select_other_item(self, item):
+        """selects an item from the item set which is not the item received
+
+        Args:
+            item (Item): the item received
+
+        Returns:
+            Item: the item selected
+        """
+        other_item_set = [i for i in self.model._item_set if i != item]
+        if len(other_item_set)>0:
+            other_item = self.model.random.choice(other_item_set)
+            return other_item
+        else:
+            return False
 
     def get_preference(self):
         return self.preference
@@ -104,7 +135,7 @@ class ArgumentAgent(CommunicatingAgent):
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.ENVIRONMENT_IMPACT, Value.VERY_GOOD))
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.NOISE, Value.VERY_GOOD))
             elif self.get_name() == "A_2":
-                self.preference.set_criterion_name_list([CriterionName.PRODUCTION_COST, CriterionName.ENVIRONMENT_IMPACT, CriterionName.CONSUMPTION, CriterionName.DURABILITY, CriterionName.NOISE])
+                self.preference.set_criterion_name_list([CriterionName.ENVIRONMENT_IMPACT, CriterionName.NOISE, CriterionName.PRODUCTION_COST, CriterionName.CONSUMPTION, CriterionName.DURABILITY])
                 for item in self.model._item_set:
                     if item.get_name() == "ICED":
                         self.preference.add_criterion_value(CriterionValue(item, CriterionName.PRODUCTION_COST, Value.GOOD))
@@ -121,18 +152,36 @@ class ArgumentAgent(CommunicatingAgent):
             else:
                 self.generate_preferences(self, random_prefs=True)
 
-    def support_proposal(self, item):
+    def support_proposal(self, received_argument = None):
         """
         Used when the agent receives " ASK_WHY " after having proposed an item
         : param item_name : str - name of the item which was proposed
         : return : string - the strongest supportive argument
         """
         # item = self.model.find_item_from_name(item_name)
-        argument = Argument(True, item)
-        argument.list_supporting_proposal(self.preference)
+        premisses, (decision, proposed_item) = self.argument_parsing(received_argument)
+
+        # In case of ask_why, the agent creates the argument
+        if decision:
+            received_argument.list_supporting_proposal(self.preference)
+            received_argument.add_premiss()
+            return received_argument
         
-        argument.add_premiss()
-        return argument
+        # Otherwise, negociating with the other agent
+        else:
+            criterion_preference_order = self.preference.get_criterion_name_list()
+            supporting_argument = Argument(True, proposed_item)
+            if isinstance(premisses[0], CoupleValue):
+                premiss = premisses[0]
+                # Prefered criterion has high value
+                for criterion in criterion_preference_order:
+                    if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()) and self.preference.get_value(proposed_item, premiss.get_criterion_name()) in [Value.GOOD, Value.VERY_GOOD]:
+                        better_crit = Comparison(criterion, premiss.get_criterion_name())
+                        good_value = CoupleValue(criterion, self.preference.get_value(proposed_item, premiss.get_criterion_name()))
+                        supporting_argument.add_premiss(better_crit)
+                        supporting_argument.add_premiss(good_value)
+                        return supporting_argument
+                return False
     
     def argument_parsing(self, argument):
         """returns the premisses and the decision from recieved message
@@ -146,44 +195,44 @@ class ArgumentAgent(CommunicatingAgent):
         """
         return argument.get_premisses(), argument.get_conclusion()         
 
-    def attack_proposal(self, argument):
-        premisses, (decision, proposed_item) = self.argument_parsing(argument)
+    def attack_proposal(self, received_argument):
+        premisses, (received_decision, proposed_item) = self.argument_parsing(received_argument)
+        assert received_decision == True
         criterion_preference_order = self.preference.get_criterion_name_list()
         attacking_argument = Argument(False, proposed_item)
         attacking_argument.list_attacking_proposal(self.preference)
-        for premiss in premisses:
-            if isinstance(premiss, CoupleValue):
-
-                # Prefered criterion
-                for criterion in criterion_preference_order:
-                    if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()):
-                        comp = Comparison(criterion, premiss.get_criterion_name())
-                        attacking_argument.add_premiss(comp)
-                        return attacking_argument
-                
-                # Lower value for the same criterion
-                if self.preference.get_value(proposed_item, premiss.get_criterion_name()).value < premiss.get_value().value:
-                    premiss = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(proposed_item, premiss.get_criterion_name()))
-                    attacking_argument.add_premiss(premiss)
+        if isinstance(premisses[0], CoupleValue):
+            premiss = premisses[0]
+            # Prefered criterion
+            for criterion in criterion_preference_order:
+                if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()):
+                    comp = Comparison(criterion, premiss.get_criterion_name())
+                    attacking_argument.add_premiss(comp)
                     return attacking_argument
-                
-                # Prefered criterion has low value
-                for criterion in criterion_preference_order:
-                    if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()) and self.preference.get_value(proposed_item, premiss.get_criterion_name()) in [Value.BAD, Value.VERY_BAD]:
-                        better_crit = Comparison(criterion, premiss.get_criterion_name())
-                        bad_value = CoupleValue(criterion, self.preference.get_value(proposed_item, premiss.get_criterion_name()))
-                        attacking_argument.add_premiss(better_crit)
-                        attacking_argument.add_premiss(bad_value)
-                        return attacking_argument
-                
-                # Other item with better value on the same criterion
-                for item in self.model._item_set:
-                    if self.preference.get_value(item, premiss.get_criterion_name()).value > premiss.get_value().value:
-                        other_prop = Argument(True, item)
-                        other_prop.list_supporting_proposal(self.preference)
-                        better_value = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(item, premiss.get_criterion_name()))
-                        other_prop.add_premiss(better_value)
-                        return other_prop
+            
+            # Lower value for the same criterion
+            if self.preference.get_value(proposed_item, premiss.get_criterion_name()).value < premiss.get_value().value:
+                premiss = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(proposed_item, premiss.get_criterion_name()))
+                attacking_argument.add_premiss(premiss)
+                return attacking_argument
+            
+            # Prefered criterion has low value
+            for criterion in criterion_preference_order:
+                if self.preference.is_preferred_criterion(criterion, premiss.get_criterion_name()) and self.preference.get_value(proposed_item, premiss.get_criterion_name()) in [Value.BAD, Value.VERY_BAD]:
+                    better_crit = Comparison(criterion, premiss.get_criterion_name())
+                    bad_value = CoupleValue(criterion, self.preference.get_value(proposed_item, premiss.get_criterion_name()))
+                    attacking_argument.add_premiss(better_crit)
+                    attacking_argument.add_premiss(bad_value)
+                    return attacking_argument
+            
+            # Other item with better value on the same criterion
+            for item in self.model._item_set:
+                if self.preference.get_value(item, premiss.get_criterion_name()).value > premiss.get_value().value:
+                    other_prop = Argument(True, item)
+                    other_prop.list_supporting_proposal(self.preference)
+                    better_value = CoupleValue(premiss.get_criterion_name(), self.preference.get_value(item, premiss.get_criterion_name()))
+                    other_prop.add_premiss(better_value)
+                    return other_prop
 
         return False
 
@@ -236,6 +285,7 @@ class ArgumentModel(Model):
         self.__message_service.dispatch_messages()
         self.check_close_argumentation()
         self.schedule.step()
+        time.sleep(1)
         
 
 

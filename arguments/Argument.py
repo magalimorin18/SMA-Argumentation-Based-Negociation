@@ -105,6 +105,28 @@ class Argument:
             self.__premisses.append(premiss)
         else:
             self.__premisses.append(self.__couple_values_list[0])
+    
+        # if len(self.__couple_values_list) > 0:
+        #     self.add_premiss(self.__couple_values_list[0])
+        # elif len(self.__comparison_list) > 0:
+        #     self.add_premiss(self.__comparison_list[0])
+        # else:
+        #     self.add_premiss(self.__couple_values_list[0])
+        # if len(self.__couple_values_list) > 0:
+        #     self.add_premiss(self.__couple_values_list[0])
+        # elif len(self.__comparison_list) > 0:
+        #     self.add_premiss(self.__comparison_list[0])
+        # else:
+        #     self.add_premiss(self.__couple_values_list[0])
+        # if len(self.__couple_values_list) > 0:
+        #     self.add_premiss(self.__couple_values_list[0])
+        # elif len(self.__comparison_list) > 0:
+        #     self.add_premiss(self.__comparison_list[0])
+        # else:
+        #     self.add_premiss(self.__couple_values_list[0])
+        # if len(self.__couple_values_list) > 0:
+        #     self.add_premiss(self.__couple_values_list[0])
+        # elif
             
         # if is_couple_value_type and len(self.__couple_values_list) > 0:
         #     self.__premisses.append(self.__couple_values_list[premiss_idx])
