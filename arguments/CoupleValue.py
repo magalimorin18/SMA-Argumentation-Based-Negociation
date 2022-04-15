@@ -28,3 +28,7 @@ class CoupleValue:
 
     def __str__(self):
         return f'{self.__criterion_name.name} = {self.__value.name}'
+
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, CoupleValue):
+            return self.__criterion_name == __o.__criterion_name and self.__value == __o.__value
