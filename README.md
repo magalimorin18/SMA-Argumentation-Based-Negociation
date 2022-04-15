@@ -39,6 +39,9 @@ We have set up the environment and the agent according to the guidelines of the 
 Their preferences are detailed in the guidelines and incites the agent $A_1$ to propose the ICED whereas the agent $A_2$ is more into the Electric car.
 
 # Progress of the project
-- Avant que nous implémentions le dictionnaire qui gardait un historique des arguments utilisés, nos deux agents débattaient infiniment en avançant toujours le même argument.
-![Capture d’écran (289)](https://user-images.githubusercontent.com/51906903/163631161-32a3dc05-cd58-4eb4-9829-6cb71f92af33.png)
-![Capture d’écran (307)](https://user-images.githubusercontent.com/51906903/163631359-e708a10f-9f0d-45e0-a6cc-11c358d47fa6.png)
+- Before we implemented the dictionary that kept a history of the arguments used, our two agents debated endlessly, always putting forward the same argument.
+![Capture d’écran (308)](https://user-images.githubusercontent.com/51906903/163631985-7c8884ae-1fc4-47f4-a2ce-c956078e83b5.png)
+
+- Here is an example of an argumentation between the two agents.
+![Capture d’écran (309)](https://user-images.githubusercontent.com/51906903/163631996-45713100-2d31-421c-835c-5757f67e68cc.png)
+
