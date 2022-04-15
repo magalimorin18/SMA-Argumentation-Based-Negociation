@@ -210,7 +210,7 @@ class ArgumentAgent(CommunicatingAgent):
                         comp = Comparison(
                             criterion, premiss.get_criterion_name())
                         attacking_argument.add_premiss(comp)
-                        usedArguments[item.get_name()].append(
+                        usedArguments[proposed_item.get_name()].append(
                             str(attacking_argument).split('←  ')[1])
                         print('used_argument in ATTACK PROPOSAL', usedArguments)
                         return attacking_argument
@@ -220,7 +220,7 @@ class ArgumentAgent(CommunicatingAgent):
                     proposed_item, premiss.get_criterion_name()))
                 if self.preference.get_value(proposed_item, premiss.get_criterion_name()).value < premiss.get_value().value:
                     attacking_argument.add_premiss(premiss)
-                    usedArguments[item.get_name()].append(
+                    usedArguments[proposed_item.get_name()].append(
                         str(attacking_argument).split('←  ')[1])
                     print('used_argument in ATTACK PROPOSAL', usedArguments)
                     return attacking_argument
@@ -234,7 +234,7 @@ class ArgumentAgent(CommunicatingAgent):
                             proposed_item, premiss.get_criterion_name()))
                         attacking_argument.add_premiss(better_crit)
                         attacking_argument.add_premiss(bad_value)
-                        usedArguments[item.get_name()].append(
+                        usedArguments[proposed_item.get_name()].append(
                             str(attacking_argument).split('←  ')[1])
                         print('used_argument in ATTACK PROPOSAL', usedArguments)
                         return attacking_argument
@@ -247,7 +247,7 @@ class ArgumentAgent(CommunicatingAgent):
                         better_value = CoupleValue(premiss.get_criterion_name(
                         ), self.preference.get_value(item, premiss.get_criterion_name()))
                         other_prop.add_premiss(better_value)
-                        usedArguments[item.get_name()].append(
+                        usedArguments[proposed_item.get_name()].append(
                             str(other_prop).split('←  ')[1])
                         print('used_argument in ATTACKING PROPOSAL',
                               usedArguments)
